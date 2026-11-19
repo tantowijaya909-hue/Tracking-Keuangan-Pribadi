@@ -336,8 +336,7 @@ section.sw-l{animation:swL .22s ease-out}
 <form id="f">
 <div class="seg" role="group" aria-label="Jenis transaksi"><button type="button" data-t="out" aria-pressed="true">Pengeluaran</button><button type="button" data-t="in" aria-pressed="false">Pemasukan</button></div>
 <label>Kategori<select id="cs"></select></label>
-<div class="mw" hidden><span>Metode pembayaran</span><div class="mseg" role="group" aria-label="Metode pembayaran"><button type="button" data-m="cash" aria-pressed="true">Tunai</button><button type="button" data-m="debit" aria-pressed="false">Debit</button></div></div>
-<p class="muted" style="margin:0;font-size:.85rem">Metode pembayaran: Debit</p>
+<div class="mw"><span>Metode pembayaran</span><div class="mseg" role="group" aria-label="Metode pembayaran"><button type="button" data-m="cash" aria-pressed="true">Tunai</button><button type="button" data-m="debit" aria-pressed="false">Debit</button></div></div>
 <label>Jumlah (Rp)<input id="amt" type="text" inputmode="numeric" autocomplete="off" required placeholder="mis. 150.000"></label>
 <label>Tanggal<input id="dt" type="date" required></label>
 <label>Catatan<input id="note" maxlength="60" placeholder="Opsional"></label>
@@ -362,7 +361,7 @@ section.sw-l{animation:swL .22s ease-out}
 <div id="bd2" class="bsum"></div></div><div class="panel"><h2>Batas per pos</h2><div class="rk" id="bl"></div></div></div></section>
 </main>
 <script>
-var PAL=["#3fb8b0","#ff9f43","#4cc46a","#a55cc9","#f5bd2f","#f26b6b","#4a90e2","#e56fb0"],KEY="keuangan-pribadi-v2",S,type="out",method="debit",$=function(i){return document.getElementById(i)};
+var PAL=["#3fb8b0","#ff9f43","#4cc46a","#a55cc9","#f5bd2f","#f26b6b","#4a90e2","#e56fb0"],KEY="keuangan-pribadi-v2",S,type="out",method="cash",$=function(i){return document.getElementById(i)};
 var DEF=[["tab","out","Tabungan & Dana Darurat"],["ortu","out","Orang Tua"],["inv","out","Investasi / Tujuan Masa Depan"],["pri","out","Kebutuhan Pribadi"],["hib","out","Keinginan / Hiburan"],["don","out","Donasi"],["gaji","in","Gaji"],["usaha","in","Usaha"],["lain","in","Pemasukan lain"]];
 var PCT={tab:34.3,ortu:28.6,inv:14.3,pri:11.4,hib:8.5,don:2.9};
 function seed(){var m=new Date().toISOString().slice(0,7),v=[3500000,1200000,1000000,500000,400000,300000,100000],k=["gaji","tab","ortu","inv","pri","hib","don"];
@@ -381,10 +380,10 @@ function fillCats(){$("cs").innerHTML=cats(type).map(function(c){return '<option
 function budBox(m,out){var b=S.bud[m];if(!b)return '<small class="muted">Anggaran</small><p style="margin:4px 0">Belum ada anggaran bulan ini. <button type="button" class="go" data-go="bud" style="padding:6px 12px;margin-left:6px">Atur anggaran</button></p>';
 var p=Math.min(100,out/b*100),o=out>b,lv=p>75?" over":p>50?" warn":"";return '<small class="muted">Anggaran bulan ini</small><div class="prog'+lv+'"><i style="width:'+p+'%"></i></div><b>'+rp(out)+'</b> dari '+rp(b)+' · '+(o?'melebihi '+rp(out-b):'sisa '+rp(b-out))}
 function setM(){document.querySelectorAll(".mseg button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.m===method)})}
-function mnet(m,mt){return S.tx.filter(function(x){return x.d.slice(0,7)===m&&(x.m||"debit")===mt}).reduce(function(a,x){return a+(x.t==="in"?x.a:-x.a)},0)}
+function mnet(m,mt){return S.tx.filter(function(x){return x.d.slice(0,7)===m&&(x.m||"cash")===mt}).reduce(function(a,x){return a+(x.t==="in"?x.a:-x.a)},0)}
 function render(){
 var m=$("mo").value,inn=sum(m,"in"),out=sum(m,"out"),oc=cats("out");
-$("sIn").textContent=rp(inn);$("sOut").textContent=rp(out);var cV=(S.cash||0)+mnet(m,"cash"),dV=mnet(m,"debit"),tot=cV+dV;$("sBal").textContent=rp(tot);$("sBal").closest(".box").classList.toggle("neg",tot<0);$("sMeth").innerHTML="<span>Tunai <i>"+rp(cV)+"</i></span><span>Debit <i>"+rp(dV)+"</i></span>";$("mid").textContent=rp(out);
+$("sIn").textContent=rp(inn);$("sOut").textContent=rp(out);$("sBal").textContent=rp(inn-out);$("sBal").closest(".box").classList.toggle("neg",inn-out<0);$("sMeth").innerHTML="<span>Tunai <i>"+rp(mnet(m,"cash"))+"</i></span><span>Debit <i>"+rp(mnet(m,"debit"))+"</i></span>";$("mid").textContent=rp(out);
 $("bd").innerHTML=budBox(m,out);$("bd2").innerHTML=budBox(m,out).replace(/<button.*?<\/button>/,"");
 var by={};
 oc.forEach(function(c){by[c.k]=sum(m,"out",c.k)});
@@ -394,7 +393,7 @@ $("hb").innerHTML=oc.map(function(c){var L=lim(c,m),o=L>0&&by[c.k]>L;return '<di
 $("cards").innerHTML=oc.map(function(c){return '<article class="cat'+(lim(c,m)>0&&by[c.k]>lim(c,m)?" over":"")+'" style="--c:'+c.c+'"><i class="cd"></i><small>Pos keuangan</small><h3>'+esc(c.n)+'</h3><div><span>'+rp(by[c.k])+'</span><span>'+String(c.p).replace(".",",")+'%</span></div><div class="prog'+(lim(c,m)>0&&by[c.k]>lim(c,m)?" over":"")+'"><i style="width:'+(lim(c,m)?Math.min(100,by[c.k]/lim(c,m)*100):0)+'%"></i></div><small>'+(lim(c,m)?(by[c.k]>lim(c,m)?"Melebihi batas "+rp(by[c.k]-lim(c,m)):"Sisa batas "+rp(lim(c,m)-by[c.k]))+" · batas "+rp(lim(c,m)):"Belum ada batas")+'</small></article>'}).join("");
 $("bl").innerHTML=S.bud[m]?oc.map(function(c){var L=lim(c,m),ov=L>0&&by[c.k]>L;return '<div class="rr" style="--c:'+c.c+'"><div class="rh"><span class="rn"><i class="dot"></i>'+esc(c.n)+' <small>'+String(c.p).replace(".",",")+'%</small></span><span class="rv">'+rp(by[c.k])+' <small>/ '+rp(L)+'</small></span></div><div class="prog'+(ov?" over":"")+'"><i style="width:'+(L?Math.min(100,by[c.k]/L*100):0)+'%"></i></div></div>'}).join(""):'<p class="muted">Atur anggaran dulu untuk melihat batas tiap pos.</p>';
 var l=S.tx.filter(function(x){return x.d.slice(0,7)===m}).sort(function(a,b){return b.d.localeCompare(a.d)||b.id-a.id});
-$("list").innerHTML=l.length?l.map(function(x){var c=find(x.k);return '<li style="--c:'+c.c+'"><span class="d"><i></i></span><span class="m"><b>'+esc(c.n)+'</b><small>'+x.d.split("-").reverse().join("/")+" · "+(x.m==="cash"?"Tunai":"Debit")+(x.n?" · "+esc(x.n):"")+'</small></span><span class="a" style="color:var(--'+x.t+')">'+(x.t==="in"?"+":"−")+rp(x.a)+'</span><span class="ac"><button type="button" data-ed="'+x.id+'" aria-label="Ubah transaksi">Ubah</button><button type="button" data-del="'+x.id+'" aria-label="Hapus transaksi">✕</button></span></li>'}).join(""):'<li class="empty">Belum ada transaksi di bulan ini. Tambahkan lewat tab Tambah.</li>';
+$("list").innerHTML=l.length?l.map(function(x){var c=find(x.k);return '<li style="--c:'+c.c+'"><span class="d"><i></i></span><span class="m"><b>'+esc(c.n)+'</b><small>'+x.d.split("-").reverse().join("/")+" · "+(x.m==="debit"?"Debit":"Tunai")+(x.n?" · "+esc(x.n):"")+'</small></span><span class="a" style="color:var(--'+x.t+')">'+(x.t==="in"?"+":"−")+rp(x.a)+'</span><span class="ac"><button type="button" data-ed="'+x.id+'" aria-label="Ubah transaksi">Ubah</button><button type="button" data-del="'+x.id+'" aria-label="Hapus transaksi">✕</button></span></li>'}).join(""):'<li class="empty">Belum ada transaksi di bulan ini. Tambahkan lewat tab Tambah.</li>';
 ["out","in"].forEach(function(t){$("cl-"+t).innerHTML=cats(t).map(function(c){return '<li style="--c:'+c.c+'"><span class="d"><i></i></span><span class="m"><b>'+esc(c.n)+'</b></span>'+(t==="out"?'<span class="lim"><span class="muted">Batas</span><input type="number" class="pi" min="0" max="100" step="0.1" value="'+c.p+'" data-p="'+c.k+'" aria-label="Batas persen '+esc(c.n)+'"><span class="muted">%</span></span>':"")+'<span class="ac"><button type="button" data-dc="'+c.k+'" aria-label="Hapus kategori '+esc(c.n)+'">✕</button></span></li>'}).join("")||'<li class="empty">Belum ada kategori.</li>'});
 var tp=Math.round(oc.reduce(function(a,c){return a+(c.p||0)},0)*10)/10;$("ptot").style.color=tp===100?"var(--in)":"var(--out)";$("ptot").textContent="Total batas: "+String(tp).replace(".",",")+"%"+(tp===100?" (pas 100%)":tp>100?" — kelebihan "+String(Math.round((tp-100)*10)/10).replace(".",",")+"%":" — "+String(Math.round((100-tp)*10)/10).replace(".",",")+"% belum dialokasikan");var ms=[0,1,2,3,4,5].map(function(i){return mon(m,5-i)}),mx=1;
 var d=ms.map(function(x){var a=sum(x,"in"),b=sum(x,"out");mx=Math.max(mx,a,b);return[x,a,b]});
@@ -419,7 +418,7 @@ document.addEventListener("change",function(e){var k=e.target.dataset&&e.target.
 var editId=null;
 function startEdit(id){var x=S.tx.filter(function(t){return String(t.id)===id})[0];if(!x)return;editId=x.id;type=x.t;
 document.querySelectorAll(".seg button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.t===type)});
-fillCats();method=x.m||"debit";setM();$("cs").value=x.k;$("amt").value=fmt(x.a);$("dt").value=x.d;$("note").value=x.n||"";
+fillCats();method=x.m||"cash";setM();$("cs").value=x.k;$("amt").value=fmt(x.a);$("dt").value=x.d;$("note").value=x.n||"";
 $("lb2").textContent="Simpan perubahan";$("cx").hidden=false;$("st").textContent="Sedang mengubah transaksi. Simpan atau batalkan.";show("add");window.scrollTo(0,0)}
 function stopEdit(){editId=null;$("lb2").textContent="Simpan transaksi";$("cx").hidden=true;$("amt").value="";$("note").value=""}
 $("cx").onclick=function(){stopEdit();$("st").textContent="";show("his")};
@@ -428,7 +427,7 @@ function fmt(n){return n?String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,"
 ["amt","bamt"].forEach(function(id){$(id).addEventListener("input",function(){var el=this,pos=el.selectionStart,len=el.value.length,f=fmt(num(el.value));el.value=f;var np=Math.max(0,pos+f.length-len);try{el.setSelectionRange(np,np)}catch(e){}})});
 $("mo").onchange=render;
 var today=new Date().toISOString().slice(0,10);$("dt").value=today;$("mo").value=today.slice(0,7);
-function boot(){load();S.tx=S.tx.filter(function(x){return x.id>7});S.tx.forEach(function(x){x.m="debit"});if(S.cash==null)S.cash=150000;S.cats.forEach(function(c){if(c.p==null)c.p=c.t==="out"?(PCT[c.k]||0):0});if(S.bud[$("mo").value]==null)S.bud[$("mo").value]=3500000;save();fillCats();render();show("dash")}
+function boot(){load();S.tx=S.tx.filter(function(x){return x.id>7});S.cats.forEach(function(c){if(c.p==null)c.p=c.t==="out"?(PCT[c.k]||0):0});if(S.bud[$("mo").value]==null)S.bud[$("mo").value]=3500000;save();fillCats();render();show("dash")}
 var BASE=KEY,SES="kp-session",ACC="kp-accounts",mode="in";
 function gmail(e){return/^[^\s@]+@gmail\.com$/i.test(e||"")}
 function accts(){try{return JSON.parse(localStorage.getItem(ACC)||"{}")}catch(e){return{}}}
